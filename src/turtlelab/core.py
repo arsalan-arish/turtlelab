@@ -11,17 +11,21 @@ import os
 
 
 class TurtleLab:
-    def __init__(self, root: tk.Tk):
+    def __init__(self, root: tk.Tk, filepath = None):
         self.root = root
         self.root.title("Interactive Turtle Lab - File Based")
         self.root.state('zoomed')
 
-        self.current_file = None
-        self.file_content = ""
-        self.code_panel_visible = True
-
         self._build_ui()
         self._create_renderer()
+        self.code_panel_visible = True
+
+        if filepath:
+            self.load_initial_file(filepath)
+        else:
+            self.current_file = None
+            self.file_content = ""
+            
 
     # -------- UI --------
     def _build_ui(self):
@@ -50,7 +54,7 @@ class TurtleLab:
         code_frame = ttk.Frame(self.left)
         code_frame.pack(fill=tk.BOTH, expand=True, padx=8, pady=4)
 
-        self.code_display = tk.Text(code_frame, font=("Consolas", 10), wrap=tk.WORD, height=20, undo=True)
+        self.code_display = tk.Text(code_frame, font=("Cascadia Code", 14), wrap=tk.WORD, height=20, undo=True, width=50)
         self.code_display.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         scrollbar = ttk.Scrollbar(code_frame, orient=tk.VERTICAL, command=self.code_display.yview)
@@ -77,6 +81,7 @@ class TurtleLab:
         ttk.Button(controls, text="Run", command=self.run_code).pack(side=tk.LEFT, expand=True, fill=tk.X)
         ttk.Button(controls, text="Clear", command=self.clear).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=4)
         ttk.Button(controls, text="Toggle Code Editor", command=self.toggle_code_panel).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=4)
+        ttk.Button(controls, text="Save", command=self.write_file).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=4)
 
         # Status bar
         self.status = tk.StringVar(value="Ready")
@@ -84,6 +89,7 @@ class TurtleLab:
 
         # Shortcuts
         self.root.bind("<Control-Return>", lambda e: self.run_code())
+        self.root.bind("<Control-s>", lambda e: self.write_file())
 
     # -------- Renderer --------
     def _create_renderer(self):
@@ -108,6 +114,7 @@ class TurtleLab:
         self.screen.update()
 
     # -------- File Operations --------
+    #! Later organize these functions in a better way modularly.
     def browse_file(self):
         filename = filedialog.askopenfilename(
             filetypes=[("Python files", "*.py"), ("All files", "*.*")],
@@ -117,11 +124,11 @@ class TurtleLab:
         if filename:
             self.load_file(filename)
 
-    def read_file(self, filepath: str):
+    def read_file(self, filepath):
         with open(filepath, 'r') as f:
             return f.read()
 
-    def load_file(self, filepath: str):
+    def load_file(self, filepath):
         try:
             self.file_content = self.read_file(filepath)
             self.current_file = filepath
@@ -133,6 +140,32 @@ class TurtleLab:
             messagebox.showerror("Error", f"Could not load file:\n{str(e)}")
             self.status.set("Error loading file")
 
+    def write_file(self):
+        if not self.current_file:
+            self.current_file = filedialog.asksaveasfilename(
+                defaultextension=".py",
+                filetypes=[("Python files", "*.py"), ("All files", "*.*")],
+                initialdir=os.getcwd(),
+                title="Save file as"
+            )
+            if self.current_file:
+                with open(self.current_file, 'w') as f:
+                    f.write(self.code_display.get("1.0", "end"))
+
+        with open(self.current_file, 'w') as f:
+            f.write(self.code_display.get("1.0", "end"))
+
+    def load_initial_file(self, filepath): # load the file given as argument in CLI
+        self.current_file = filepath
+        try:
+            self.file_content = self.read_file(filepath)
+        except FileNotFoundError as e:
+            with open(self.current_file, 'w') as f:
+                pass
+            self.file_content = ""
+        self.code_display.insert(tk.END, self.file_content)
+        self.status.set(f"Loaded: {os.path.basename(filepath)}")
+    
     # -------- Execution --------
     def run_code(self):
         code = self.code_display.get("1.0", tk.END)
@@ -188,9 +221,7 @@ class TurtleLab:
         self.status.set("Cleared")
 
 
-def main():
+def main(filepath = None):
     root = tk.Tk()
-    TurtleLab(root)
+    TurtleLab(root, filepath)
     root.mainloop()
-
-#main()
