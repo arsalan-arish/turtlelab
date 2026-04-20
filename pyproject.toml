@@ -31,3 +31,6 @@ build-backend = "uv_build"
 [tool.uv.build-backend]
 module-root = "src"
 module-name = "turtlelab"
+
+[tool.pyright]
+ignore = ["test*", "TkinterApp.py", "turtle_IDE.py"]

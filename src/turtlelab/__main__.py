@@ -1,4 +1,4 @@
-from .core import main #! add a dot to core
+from .core import main
 from sys import argv
 from pathlib import Path
 
