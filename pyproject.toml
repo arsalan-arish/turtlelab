@@ -33,4 +33,4 @@ module-root = "src"
 module-name = "turtlelab"
 
 [tool.pyright]
-ignore = ["test*", "TkinterApp.py", "turtle_IDE.py"]
+ignore = ["test*", "IDE/TkinterApp.py", "IDE/turtle_IDE.py"]
