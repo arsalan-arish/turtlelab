@@ -12,7 +12,7 @@ A simple Graphical Interface for executing Python turtle graphics from external 
 
 ```cli
 pip install turtlelab
-turtlelab test.py # Execute from CLI
+turtlelab test.py
 ```
 
 1. Click **Browse...** to select a Python file

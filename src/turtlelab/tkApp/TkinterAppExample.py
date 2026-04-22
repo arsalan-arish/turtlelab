@@ -1,4 +1,3 @@
-# pyright: ignore
 from tkinter import *
 from TkinterApp import TkinterApp, FileObject, Editor
 from pathlib import Path

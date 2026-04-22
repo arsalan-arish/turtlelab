@@ -1,227 +1,129 @@
-"""
-================= Interactive Turtle Lab =================
-Loads turtle code from external Python files and executes.
-"""
-
-import tkinter as tk
-from tkinter import ttk, messagebox, filedialog
-import traceback
-import turtle
-import os
+from tkinter import *
+from .tkApp import TkinterApp
 
 
-class TurtleLab:
-    def __init__(self, root: tk.Tk, filepath = None):
-        self.root = root
-        self.root.title("Interactive Turtle Lab - File Based")
-        self.root.state('zoomed')
+class TurtleLab(TkinterApp):
+    def __init__(self, root: Tk):
+        pass
+        # First set initial config
+        # then bind it to self
+        # then call the methods 
+        # e.g =>
+        """
+        root.title("My GUI Program")
 
-        self._build_ui()
-        self._create_renderer()
-        self.code_panel_visible = True
-
-        if filepath:
-            self.load_initial_file(filepath)
-        else:
-            self.current_file = None
-            self.file_content = ""
-            
-
-    # -------- UI --------
-    def _build_ui(self):
-        self.main = ttk.Frame(self.root)
-        self.main.pack(fill=tk.BOTH, expand=True)
-
-        # Left panel: File selection + Code display
-        self.left = ttk.Frame(self.main)
-        self.left.pack(side=tk.LEFT, fill=tk.BOTH, expand=False)
-
-        # File selection area
-        file_frame = ttk.LabelFrame(self.left, text="File", padding=8)
-        file_frame.pack(fill=tk.X, padx=8, pady=6)
-
-        ttk.Button(file_frame, text="Browse...", command=self.browse_file).pack(fill=tk.X)
-        
-        self.file_label = ttk.Label(file_frame, text="No file selected", foreground="gray")
-        self.file_label.pack(fill=tk.X, pady=4)
-
-        # Code display header
-        code_header = ttk.Frame(self.left)
-        code_header.pack(fill=tk.X, padx=8, pady=(6, 2))
-        ttk.Label(code_header, text="Code Editor", font=(None, 11, "bold")).pack(side=tk.LEFT)
-
-        # Code display with scrollbar
-        code_frame = ttk.Frame(self.left)
-        code_frame.pack(fill=tk.BOTH, expand=True, padx=8, pady=4)
-
-        self.code_display = tk.Text(code_frame, font=("Cascadia Code", 14), wrap=tk.WORD, height=20, undo=True, width=50)
-        self.code_display.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
-        scrollbar = ttk.Scrollbar(code_frame, orient=tk.VERTICAL, command=self.code_display.yview)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        self.code_display.config(yscrollcommand=scrollbar.set)
-
-        self.code_display.bind("<Return>", self._smart_indent)
-        self.code_display.bind("<Tab>", self._tab)
-        self.code_display.bind("<Control-Return>", lambda e: self.run_code())
-
-        # Right panel: Canvas + Controls
-        self.right = ttk.Frame(self.main)
-        self.right.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
-        ttk.Label(self.right, text="Canvas", font=(None, 11, "bold")).pack(anchor=tk.W, padx=8, pady=6)
-
-        self.canvas = tk.Canvas(self.right, bg="white", highlightthickness=0)
-        self.canvas.pack(fill=tk.BOTH, expand=True, padx=8, pady=4)
-
-        # Control buttons (below canvas)
-        controls = ttk.Frame(self.right)
-        controls.pack(fill=tk.X, padx=8, pady=6)
-
-        ttk.Button(controls, text="Run", command=self.run_code).pack(side=tk.LEFT, expand=True, fill=tk.X)
-        ttk.Button(controls, text="Clear", command=self.clear).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=4)
-        ttk.Button(controls, text="Toggle Code Editor", command=self.toggle_code_panel).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=4)
-        ttk.Button(controls, text="Save", command=self.write_file).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=4)
-
-        # Status bar
-        self.status = tk.StringVar(value="Ready")
-        ttk.Label(self.root, textvariable=self.status, relief=tk.SUNKEN, anchor=tk.W).pack(fill=tk.X)
-
-        # Shortcuts
-        self.root.bind("<Control-Return>", lambda e: self.run_code())
-        self.root.bind("<Control-s>", lambda e: self.write_file())
-
-    # -------- Renderer --------
-    def _create_renderer(self):
-        self.canvas.delete("all")
-
-        self.screen = turtle.TurtleScreen(self.canvas)
-        self.screen.tracer(0)
-
-        self.t = turtle.RawTurtle(self.screen)
-        self.t.speed(0)
-        self.t.shape("turtle")
-        self.t.penup()
-        self.t.setposition(150, -150)
-        self.t.pendown()
-
-        self.exec_globals = {
-            "t": self.t,
-            "screen": self.screen,
-            "__builtins__": __builtins__,
-        }
-
-        self.screen.update()
-
-    # -------- File Operations --------
-    #! Later organize these functions in a better way modularly.
-    def browse_file(self):
-        filename = filedialog.askopenfilename(
-            filetypes=[("Python files", "*.py"), ("All files", "*.*")],
-            initialdir=os.getcwd()
+        self.bind_to_self (
+            root = root,
         )
-        
-        if filename:
-            self.load_file(filename)
 
-    def read_file(self, filepath):
-        with open(filepath, 'r') as f:
-            return f.read()
+        self.build_menu()
+        self.bind_events()
+        self.build_widget_tree()
+        self.build_layout(["all"])
+        """
 
-    def load_file(self, filepath):
+    def bind_events(self):
+        pass
+        # Bind general shortcuts to root
+        # e.g => 
+        """
+        self.root.bind("<Control-s>", lambda e: self.menu_save())
+        """
+
+    def build_widget_tree(self):
+        pass
+        # All the main UI Frame Widgets will be made here with their respective hierarchies and properties
+        # They will be stored in components dict which will be bound to self
+        # e.g =>
+        """
+        mainframe = Frame(self.root, bg="grey")
+        tabSpace = Frame(mainframe, height=35, bg="white");    tabSpace.pack_propagate(False)
+        components = {
+            "mainframe":   mainframe,
+            "tabSpace":  tabSpace,
+        }
+        self.bind_to_self(
+            components = components,
+        )
+        """
+
+    def build_layout(self, components: list[str]):
+        pass
+        # The UI Widgets will be projected onto the screen with the geometry manager
+        # This function accepts components list, so later on individual components can also be reconstructed
+        # For that, it will follow this if statements style
+        # e.g =>
+        """
+        if "all" in components:
+            components += list(self.components.keys())
+        if "statusBar" in components:
+            self.components["statusBar"].pack(side="bottom", fill="x")
+        if "sideframe" in components:
+            self.components["sideframe"].pack(side="left", fill="y")
+        if "commandPanel" in components and "all" not in components:
+            self.components["commandPanel"].place(relx=0.5, rely=0.1, anchor="center")
+        """
+
+    def toggleComponent(self, component: str):
+        pass
+        # The components which are togglable, can be toggled to show/hide 
+        # A standard example is below
+        # e.g =>
+        """
+        property = f"{component}Visible"
         try:
-            self.file_content = self.read_file(filepath)
-            self.current_file = filepath
-            self.file_label.config(text=os.path.basename(filepath), foreground="black")
-            self.code_display.delete("1.0", tk.END)
-            self.code_display.insert(tk.END, self.file_content)
-            self.status.set(f"Loaded: {os.path.basename(filepath)}")
-        except Exception as e:
-            messagebox.showerror("Error", f"Could not load file:\n{str(e)}")
-            self.status.set("Error loading file")
+            self.state[property] = not self.state[property]
+        except AttributeError as e:
+            print(e, "This component cannot be toggled")
 
-    def write_file(self):
-        if not self.current_file:
-            self.current_file = filedialog.asksaveasfilename(
-                defaultextension=".py",
-                filetypes=[("Python files", "*.py"), ("All files", "*.*")],
-                initialdir=os.getcwd(),
-                title="Save file as"
-            )
-            if self.current_file:
-                with open(self.current_file, 'w') as f:
-                    f.write(self.code_display.get("1.0", "end"))
-
-        with open(self.current_file, 'w') as f:
-            f.write(self.code_display.get("1.0", "end"))
-
-    def load_initial_file(self, filepath): # load the file given as argument in CLI
-        self.current_file = filepath
-        try:
-            self.file_content = self.read_file(filepath)
-        except FileNotFoundError as e:
-            with open(self.current_file, 'w') as f:
-                pass
-            self.file_content = ""
-        self.code_display.insert(tk.END, self.file_content)
-        self.status.set(f"Loaded: {os.path.basename(filepath)}")
-    
-    # -------- Execution --------
-    def run_code(self):
-        code = self.code_display.get("1.0", tk.END)
-        
-        if not code.strip():
-            messagebox.showwarning("No Code", "Please enter some code first.")
-            return
-
-        if "import turtle" in code:
-            messagebox.showerror(
-                "Invalid Code",
-                "Do NOT import turtle.\nUse the provided `t` and `screen`."
-            )
-            return
-
-        self.status.set("Running…")
-        self._create_renderer()
-
-        try:
-            exec(code, self.exec_globals)
-            self.screen.update()
-            self.status.set("Execution complete")
-        except Exception:
-            messagebox.showerror(
-                "Execution Error",
-                traceback.format_exc()
-            )
-            self.status.set("Error")
-
-    # -------- UI Toggle --------
-    def toggle_code_panel(self):
-        self.code_panel_visible = not self.code_panel_visible
-        if self.code_panel_visible:
-            self.left.pack(side=tk.LEFT, fill=tk.BOTH, expand=False, before=self.right)
+        if self.state[property]:
+            self.build_layout([component])
         else:
-            self.left.pack_forget()
-
-    def _smart_indent(self, event):
-        """Smart indentation: when Enter is pressed, indent the next line to match the previous line's indentation."""
-        self.code_display.insert(tk.INSERT, "\n")
-        line_start = self.code_display.get("insert-1c linestart", "insert-1c")
-        indent = len(line_start) - len(line_start.lstrip())
-        self.code_display.insert(tk.INSERT, " " * indent)
-        return "break"
-    
-    def _tab(self, event):
-        self.code_display.insert(tk.INSERT, "    ")
-        return "break"
-
-    # -------- Clear --------
-    def clear(self):
-        self._create_renderer()
-        self.status.set("Cleared")
+            self.components[component].pack_forget()
+            self.components[component].place_forget()
+            self.components[component].grid_forget()
+        """
 
 
-def main(filepath = None):
-    root = tk.Tk()
-    TurtleLab(root, filepath)
+    #* ========= NORMAL FUNCTIONS ========= #*
+    # Normal functions to manage the application
+    # e.g =>
+    """
+    def rm_tabSpaceBlock(self, id: int, tabSpace: Frame):
+        for child in tabSpace.winfo_children():
+            if child.id == id:
+                child.destroy()
+
+    def ....
+    """
+
+
+    #* ========= MENU ========= #*
+    def build_menu(self):
+        pass
+        # The menu will be built here. All the functions of menu will be below it with 'menu_' prefix
+        # e.g => 
+        """
+        self.set_menu(["File", "Edit"])
+        self.fill_sub_menu (
+            self.sub_menus["File"],
+            {
+                "New File": self.menu_newFile,
+                "Open File": self.menu_openFile,
+                "Open Folder": self.menu_openFolder,
+                "Save": self.menu_save,
+                "Save As": self.menu_saveAs,
+            }
+        )
+        """
+
+
+
+
+def app():
+    root = Tk()
+    TurtleLab(root)
     root.mainloop()
+
+#! Only for testing
+app()

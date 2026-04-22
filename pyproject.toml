@@ -1,22 +1,19 @@
 [project]
 name = "turtlelab"
-version = "0.2.0"
+version = "0.3.0"
 description = "An interactive graphical interface to make turtle programming easier & better"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 dependencies = []
 license = "MIT"
 authors = [
   { name="Arsalan Arish", email="mail@arsalanarish.com" },
 ]
-maintainers = [
-  { name="Arsalan Arish", email="mail@arsalanarish.com" },
-]
-keywords = ["turtle", "turtleide", "interactiveturtle"]
+keywords = ["turtle", "turtleIDE", "interactiveturtle"]
 
 
 [project.scripts]
-turtlelab = "turtlelab.core:main"
+turtlelab = "turtlelab.__main__:main"
 
 
 [project.urls]
@@ -33,4 +30,4 @@ module-root = "src"
 module-name = "turtlelab"
 
 [tool.pyright]
-ignore = ["test*", "IDE/TkinterApp.py", "IDE/turtle_IDE.py"]
+ignore = ["src/"]
