@@ -1,5 +1,5 @@
 from tkinter import *
-from TkinterApp import TkinterApp, FileObject, Editor
+from TkinterApp import TkinterApp, FileObject, Editor, Terminal
 from pathlib import Path
 import json
 import os
@@ -19,7 +19,6 @@ class TurtleLab(TkinterApp):
         root.title("My GUI Program")
         root.iconbitmap()
 
-        settings = json.loads(self.SETTINGS_JSON_PATH.read_text())
         state = {
             "sidebarVisible": True,
             "panelVisible": True,
@@ -39,8 +38,8 @@ class TurtleLab(TkinterApp):
         self.bind_events()
         self.build_widget_tree()
         self.build_layout(["all"])
-        
-
+        self.initialize_terminal()
+    
 
     def bind_events(self):
         # General shortcuts
@@ -110,6 +109,10 @@ class TurtleLab(TkinterApp):
             self.components["commandPanel"].childs["entry"].focus()
 
 
+    def initialize_terminal(self):
+        term = Terminal(self.components["panel"])
+        term.pack(fill="both", expand=True)
+
 
     def toggleComponent(self, component: str):
         property = f"{component}Visible"
@@ -167,7 +170,7 @@ class TurtleLab(TkinterApp):
         return id
 
     def getCodeEditor(self) -> Editor:
-        editor = Editor()
+        editor = Editor(self.components["editorSpace"])
         return editor
 
     def loadDirectory(self, path: Path):
@@ -177,9 +180,9 @@ class TurtleLab(TkinterApp):
 
     def build_menu(self):
         """This contains the code related to menu"""
-        self.set_menu(["File", "Edit", "View", "Help"])
+        self.set_menu(["File"])
 
-        self.fill_sub_menu(
+        self.fill_sub_menu (
             self.sub_menus["File"],
             {
                 "New File": self.menu_newFile,
@@ -187,14 +190,6 @@ class TurtleLab(TkinterApp):
                 "Open Folder": self.menu_openFolder,
                 "Save": self.menu_save,
                 "Save As": self.menu_saveAs,
-            }
-        )
-        self.fill_sub_menu(
-            self.sub_menus["Edit"],
-            {
-                "Cut": self.menu_cut,
-                "Copy": self.menu_copy,
-                "Paste": self.menu_paste,
             }
         )
 
@@ -231,7 +226,7 @@ class TurtleLab(TkinterApp):
                 return
         # At this point, it means that the current active tab is not associated with a file object (either it is a new file or not a file at all)
         editorSpaceWidget = [child for child in self.components["editorSpace"].winfo_children() if child.id == activeTabId].pop()
-        if type(editorSpaceWidget) == Text:
+        if type(editorSpaceWidget) == Editor:
             self.menu_saveAs()
         else:
             self.popMessageBox("info", "Save File", "Please select an appropriate file tab to save the file")
@@ -249,17 +244,6 @@ class TurtleLab(TkinterApp):
         fileObj = FileObject(activeTabId, name, path, editor)
         fileObj.save()
         self.state["FileObjects"].append(fileObj)
-
-
-    def menu_cut(self):
-        pass
-    def menu_copy(self):
-        pass
-    def menu_paste(self):
-        pass
-
-
-
 
 
 
