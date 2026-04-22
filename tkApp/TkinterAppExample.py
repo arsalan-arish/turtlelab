@@ -1,7 +1,7 @@
+# pyright: ignore
 from tkinter import *
-from TkinterApp import TkinterApp, FileObject, Editor, Terminal
+from TkinterApp import TkinterApp, FileObject, Editor
 from pathlib import Path
-import json
 import os
 
 os.chdir(Path(__file__).parent)
@@ -9,7 +9,6 @@ os.chdir(Path(__file__).parent)
 class TurtleLab(TkinterApp):
     WIDTH = 800
     HEIGHT = 600
-    SETTINGS_JSON_PATH = Path("settings.json")
 
     def __init__(self, root: Tk):
         
@@ -31,14 +30,12 @@ class TurtleLab(TkinterApp):
         self.bind_to_self (
             root = root,
             state = state,
-            settings = settings,
         )
 
         self.build_menu()
         self.bind_events()
         self.build_widget_tree()
         self.build_layout(["all"])
-        self.initialize_terminal()
     
 
     def bind_events(self):
@@ -109,11 +106,6 @@ class TurtleLab(TkinterApp):
             self.components["commandPanel"].childs["entry"].focus()
 
 
-    def initialize_terminal(self):
-        term = Terminal(self.components["panel"])
-        term.pack(fill="both", expand=True)
-
-
     def toggleComponent(self, component: str):
         property = f"{component}Visible"
         try:
@@ -128,16 +120,46 @@ class TurtleLab(TkinterApp):
             self.components[component].place_forget()
             self.components[component].grid_forget()
 
+    def add_tabSpaceBlock(self, id: int, textVar: StringVar, tabSpace: Frame):
+        """ Create a tab block able of showing name and cross (closing icon), with basic events bound to it"""
+        block = Frame(tabSpace, height=35, width=100, relief="solid", bd=1)
+        block.pack_propagate(False)
+        block.id = id
+        f = Frame(block, width=80, height=35); f.pack(side="left"); f.pack_propagate(False)
+        l = Label(f, textvariable=textVar, padx=10)
+        l.pack(anchor="center")
+        cross = Button(block, text="✖", command=lambda: (self.deactivateTab(id), self.rmTab(id)), bg="white", width=1, height=1)
+        cross.pack(side="right", fill="y")
+        block.pack(side="left")
+        
+        block.bind("<ButtonPress-1>", lambda e: self.activateTab(id))
+        l.bind("<ButtonPress-1>", lambda e: self.activateTab(id))
+
+    def rm_tabSpaceBlock(self, id: int, tabSpace: Frame):
+        """ Delete and remove that tab block"""
+        for child in tabSpace.winfo_children():
+            if child.id == id:
+                child.destroy()
+                
+    def add_editorSpaceBlock(self, id: int, widget: Any, editorSpace: Frame):
+        """ Takes the widget and assigns it the id as well as makes sure that it is a child of editorSpace frame """
+        assert widget in editorSpace.winfo_children()
+        widget.id = id
+
+    def rm_editorSpaceBlock(self, id: int, editorSpace: Frame):
+        """ Removes and deletes the widget in editorSpace """
+        for child in editorSpace.winfo_children():
+            if child.id == id:
+                child.destroy()
 
     # editorSpaceBlock + tabSpaceBlock = Tab
     def createTab(self, id: int, nameVar: StringVar, widget: Any):
-        self.add_tabSpaceBlock(id, nameVar)
-        self.add_editorSpaceBlock(id, widget)
+        self.add_tabSpaceBlock(id, nameVar, self.components["tabSpace"])
+        self.add_editorSpaceBlock(id, widget, self.components["editorSpace"])
 
     def rmTab(self, id: int):
-        self.deactivateTab(id)
-        self.rm_tabSpaceBlock(id)
-        self.rm_editorSpaceBlock(id)
+        self.rm_tabSpaceBlock(id, self.components["tabSpace"])
+        self.rm_editorSpaceBlock(id, self.components["editorSpace"])
 
     def activateTab(self, id: int):
         if tabId := self.state["activeTab"]:
@@ -176,7 +198,6 @@ class TurtleLab(TkinterApp):
     def loadDirectory(self, path: Path):
         os.chdir(path)
 
-    #! =================== MENU UTILITIES FUNCTIONS START HERE =================== #!
 
     def build_menu(self):
         """This contains the code related to menu"""
