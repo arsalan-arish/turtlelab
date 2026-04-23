@@ -1,1 +1,1 @@
-from TkinterApp import TkinterApp, Editor, FileObject
+from .TkinterApp import TkinterApp, Editor, FileObject, CommandPanel

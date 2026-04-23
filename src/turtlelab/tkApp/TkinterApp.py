@@ -98,14 +98,6 @@ class TkinterApp(ABC):
                 messagebox.showwarning(title, msg)
             case "error":
                 messagebox.showerror(title, msg)
-        
-    def getCenteredDimensions(self, width, height, root) -> str:
-        """ Returns a formatted string to be given to root.geometry(), the initial window will be centered on the screen"""
-        dwidth = root.winfo_screenwidth()
-        dheight = root.winfo_screenheight()
-        center_x = int(dwidth/2 - width / 2) - 25
-        center_y = int(dheight/2 - height / 2) - 35 
-        return f"{width}x{height}+{center_x}+{center_y}"
 
 
 #! ========== The classes below are prebuilt components that can optionally be used in an application ========== #!
@@ -113,19 +105,31 @@ class TkinterApp(ABC):
 class FileObject:
     """ A class to group together components of a file managed by the application """
 
-    def __init__(self, id: int, nameVar: StringVar, filepath: Path, editor: Editor):
+    def __init__(self, id: int, nameVar: StringVar, filepath: Path, tabBlock: Frame, editor: Editor):
         """nameVar is a StringVar() holding file name, id is synced with the tab id, editor is the instance of the Editor class that holds the file content"""
         self.id = id
         self.nameVar = nameVar
         self.filepath = filepath
+        self.tabBlock = tabBlock
         self.editor = editor
+
+        self.isSaved = BooleanVar(value=True)
+        self.isSaved.trace_add("write", self.putModifiedSign)
+        self.sign = Label(self.tabBlock, text="*", name="sign")
+        self.editor.bind("<<Modified>>", lambda e: self.isSaved.set(False))
 
     def save(self):
         """ Save the file contents from editor to the file path """
         data = self.editor.get("1.0", "end-1c")
         with open(self.filepath, "w") as f:
             f.write(data)
-    
+            self.isSaved.set(True)
+
+    def putModifiedSign(self, *args):
+        if self.isSaved.get():
+            self.sign.pack(side="right")
+        else:
+            self.sign.pack_forget()
 
 
 class Editor(Text):
@@ -146,3 +150,30 @@ class Editor(Text):
     def tab(self):
         self.insert("insert", "    ")
         return "break"
+
+
+class CommandPanel(Frame):
+    """ A commandpanel that should be given root of application """
+    def __init__(self, root: Tk):
+        super().__init__(root, height=400, width=530, bg="black")
+        self.pack_propagate(False)
+
+        entryFrame = Frame(self, height=30,width=520)
+        entryFrame.pack_propagate(False)
+        entryFrame.pack()
+        entry = Entry(entryFrame)
+        entry.pack()
+        # entry.place(relx=0.5, y=150, anchor="center", width=520)
+
+
+        self.childs = {}
+        self.childs["entryFrame"] = entryFrame
+        self.childs["entry"] = entry
+
+    def display(self):
+        self.place(relx=0.5, rely=0.1, anchor="center")
+        self.childs["entry"].focus()
+
+    def hide(self):
+        self.place_forget()
+        self.childs["entry"].delete(0, "end")
