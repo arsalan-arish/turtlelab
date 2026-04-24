@@ -95,8 +95,6 @@ class TurtleLab(TkinterApp):
             self.components["rightFrame"].grid(row=0, column=1, sticky="nsew")
         if "panel" in components and "all" not in components:
             self.components["panel"].display()
-        # if "canvas" in components:
-        #     self.components["canvas"].pack(fill="both", expand=True, padx=5, pady=5)
 
 
 
