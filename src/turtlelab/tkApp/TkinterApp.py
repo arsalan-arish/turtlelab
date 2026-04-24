@@ -103,33 +103,42 @@ class TkinterApp(ABC):
 #! ========== The classes below are prebuilt components that can optionally be used in an application ========== #!
 
 class FileObject:
-    """ A class to group together components of a file managed by the application """
-
-    def __init__(self, id: int, nameVar: StringVar, filepath: Path, tabBlock: Frame, editor: Editor):
-        """nameVar is a StringVar() holding file name, id is synced with the tab id, editor is the instance of the Editor class that holds the file content"""
+    def __init__(self, id, nameVar, filepath, tabBlock, editor):
         self.id = id
         self.nameVar = nameVar
         self.filepath = filepath
         self.tabBlock = tabBlock
         self.editor = editor
 
+        #! For compatibility, the fileobject is connected to the editor as well
+        self.editor.fileObject = self
+
         self.isSaved = BooleanVar(value=True)
         self.isSaved.trace_add("write", self.putModifiedSign)
+
         self.sign = Label(self.tabBlock, text="*", name="sign")
-        self.editor.bind("<<Modified>>", lambda e: self.isSaved.set(False))
+
+        self.editor.edit_modified(False)
+        self.editor.bind("<<Modified>>", self.on_modified)
+
+    def on_modified(self, *_):
+        if self.editor.edit_modified():
+            self.isSaved.set(False)
+            self.editor.edit_modified(False)  # critical
 
     def save(self):
-        """ Save the file contents from editor to the file path """
         data = self.editor.get("1.0", "end-1c")
         with open(self.filepath, "w") as f:
             f.write(data)
-            self.isSaved.set(True)
 
-    def putModifiedSign(self, *args):
+        self.isSaved.set(True)
+        self.editor.edit_modified(False)  # reset after save
+
+    def putModifiedSign(self, *_):
         if self.isSaved.get():
-            self.sign.pack(side="right")
-        else:
             self.sign.pack_forget()
+        else:
+            self.sign.pack(side="right")
 
 
 class Editor(Text):
@@ -150,6 +159,14 @@ class Editor(Text):
     def tab(self):
         self.insert("insert", "    ")
         return "break"
+    
+    def destroy(self):
+        fileObject = self.fileObject #! Specially given by FileObject class in __init__
+        if not fileObject.isSaved.get():
+            ans = messagebox.askyesnocancel("TurtleLab IDE", f"Do you want to save changes you made to {fileObject.nameVar.get()}", detail="Or they will be lost", default='cancel')
+            if ans is None: raise Exception("The editor block refused to destroy as user said")
+            if ans: fileObject.save()
+        super().destroy()
 
 
 class CommandPanel(Frame):

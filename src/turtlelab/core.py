@@ -155,9 +155,12 @@ class TurtleLab(TkinterApp):
 
     def rmTab(self, id: int):
         if id is None: return
-        self.deactivateTab(id)
+        self.state["activeTab"] = None
+        try:
+            self.rm_editorSpaceBlock(id, self.components["editorSpace"])
+        except Exception: # The block refused to be removed
+            return
         self.rm_tabSpaceBlock(id, self.components["tabSpace"])
-        self.rm_editorSpaceBlock(id, self.components["editorSpace"])
 
     def activateTab(self, id: int):
         if id is None: return
@@ -192,6 +195,11 @@ class TurtleLab(TkinterApp):
             if child.id == tabId:
                 return child
             
+    def getFileObject(self, id: int):
+        for obj in self.state["FileObjects"]:
+            if obj.id == id:
+                return obj
+    
     def handleEscape(self):
         if self.state["panelVisible"]:
             self.toggleComponent("panel")
