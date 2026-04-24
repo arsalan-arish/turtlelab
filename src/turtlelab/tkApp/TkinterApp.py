@@ -161,7 +161,10 @@ class Editor(Text):
         return "break"
     
     def destroy(self):
-        fileObject = self.fileObject #! Specially given by FileObject class in __init__
+        try:
+            fileObject = self.fileObject #! Specially given by FileObject class __init__
+        except AttributeError as e: # which means that the editor is of a new unsaved file
+            super().destroy(); return
         if not fileObject.isSaved.get():
             ans = messagebox.askyesnocancel("TurtleLab IDE", f"Do you want to save changes you made to {fileObject.nameVar.get()}", detail="Or they will be lost", default='cancel')
             if ans is None: raise Exception("The editor block refused to destroy as user said")
@@ -177,7 +180,7 @@ class CommandPanel(Frame):
 
         entryFrame = Frame(self, height=30,width=520)
         entryFrame.pack_propagate(False)
-        entryFrame.pack()
+        entryFrame.pack(side="left")
         entry = Entry(entryFrame)
         entry.pack()
         # entry.place(relx=0.5, y=150, anchor="center", width=520)

@@ -30,4 +30,4 @@ module-root = "src"
 module-name = "turtlelab"
 
 [tool.pyright]
-ignore = ["src/"]
+ignore = ["src/", "new/"]

@@ -1,4 +1,5 @@
 from tkinter import *
+from tkinter import ttk
 from tkApp import TkinterApp, Editor, FileObject, CommandPanel
 from pathlib import Path
 import os
@@ -52,6 +53,7 @@ class TurtleLab(TkinterApp):
         leftFrame = Frame(mainframe, bd=2, relief="solid")
         rightFrame = Frame(mainframe, bd=2, relief="solid")
 
+
         components = {
             "topBar": topBar,
             "mainframe": mainframe,
@@ -93,6 +95,8 @@ class TurtleLab(TkinterApp):
             self.components["rightFrame"].grid(row=0, column=1, sticky="nsew")
         if "panel" in components and "all" not in components:
             self.components["panel"].display()
+        # if "canvas" in components:
+        #     self.components["canvas"].pack(fill="both", expand=True, padx=5, pady=5)
 
 
 
@@ -136,10 +140,10 @@ class TurtleLab(TkinterApp):
             if child.id == id:
                 child.destroy()
                 
-    def add_editorSpaceBlock(self, id: int, widget: Any, editorSpace: Frame):
-        """ Takes the widget and assigns it the id as well as makes sure that it is a child of editorSpace frame """
-        assert widget in editorSpace.winfo_children()
-        widget.id = id
+    def add_editorSpaceBlock(self, id: int, widgets: list, editorSpace: Frame):
+        """ Takes the widget and assigns it the id. Make sure the widget is the child of the parent where it is to be packed"""
+        for widget in widgets:
+            widget.id = id
 
     def rm_editorSpaceBlock(self, id: int, editorSpace: Frame):
         """ Removes and deletes the widget in editorSpace """
@@ -168,8 +172,8 @@ class TurtleLab(TkinterApp):
             self.deactivateTab(tabId)
         
         self.state["activeTab"] = id
-        tabSpaceBlock = self.getTabSpaceWidget(id)
-        editorSpaceBlock = self.getEditorSpaceWidget(id)
+        tabSpaceBlock = self.getTabSpaceWidgetFromId(id)
+        editorSpaceBlock = self.getEditorSpaceWidgetFromId(id)
 
         tabSpaceBlock.configure(bg="#222121", bd=2, relief="raised")
         editorSpaceBlock.pack(fill="both", expand=True)
@@ -177,25 +181,25 @@ class TurtleLab(TkinterApp):
     def deactivateTab(self, id: int):
         if id is None: return
         self.state["activeTab"] = None
-        tabSpaceBlock = self.getTabSpaceWidget(id)
-        editorSpaceBlock = self.getEditorSpaceWidget(id)
+        tabSpaceBlock = self.getTabSpaceWidgetFromId(id)
+        editorSpaceBlock = self.getEditorSpaceWidgetFromId(id)
 
         tabSpaceBlock.configure(bg="white", bd=1)
         editorSpaceBlock.pack_forget()
 
-    def getTabSpaceWidget(self, tabId: int):
+    def getTabSpaceWidgetFromId(self, tabId: int):
         if tabId is None: return
         for child in self.components["tabSpace"].winfo_children():
             if child.id == tabId:
                 return child
 
-    def getEditorSpaceWidget(self, tabId: int):
+    def getEditorSpaceWidgetFromId(self, tabId: int):
         if tabId is None: return
         for child in self.components["editorSpace"].winfo_children():
             if child.id == tabId:
                 return child
             
-    def getFileObject(self, id: int):
+    def getFileObjectFromId(self, id: int):
         for obj in self.state["FileObjects"]:
             if obj.id == id:
                 return obj
@@ -209,13 +213,16 @@ class TurtleLab(TkinterApp):
         self.state["tabIdCounter"] += 1
         return id
     
-    def getCodeEditor(self) -> Editor:
+    def getNewCodeEditor(self) -> Editor:
         editor = Editor(self.components["editorSpace"])
         return editor
 
     def loadDirectory(self, path: Path):
         os.chdir(path)
 
+    def getNewCanvas(self):
+        canvas = Canvas(self.components["rightFrame"], bg="blue")
+        return canvas
 
     #* ========= MENU ========= #*
     def build_menu(self):
@@ -235,7 +242,7 @@ class TurtleLab(TkinterApp):
 
     def menu_newFile(self):
         id = self.getNewTabId()
-        editor = self.getCodeEditor()
+        editor = self.getNewCodeEditor()
         editor.focus()
         self.createTab(id, StringVar(value="New"), editor)
         self.activateTab(id)
@@ -245,12 +252,12 @@ class TurtleLab(TkinterApp):
         filename, filepath, data = self.promptForFile()
         if not filename: return
         filename = StringVar(value=filename)
-        editor = self.getCodeEditor()
+        editor = self.getNewCodeEditor()
         editor.insert("end", data)
         editor.focus()
         self.createTab(id, filename, editor)
         self.activateTab(id)
-        self.state["FileObjects"].append(FileObject(id, filename, filepath, self.getTabSpaceWidget(id), editor))
+        self.state["FileObjects"].append(FileObject(id, filename, filepath, self.getTabSpaceWidgetFromId(id), editor))
 
     def menu_openFolder(self):
         path = self.promptForFolder()
@@ -265,7 +272,7 @@ class TurtleLab(TkinterApp):
                 obj.save()
                 return
         # At this point, it means that the current active tab is not associated with a file object (either it is a new file or not a file at all)
-        editorSpaceWidget = self.getEditorSpaceWidget(activeTabId)
+        editorSpaceWidget = self.getEditorSpaceWidgetFromId(activeTabId)
         if type(editorSpaceWidget) == Editor:
             self.menu_saveAs()
         else:
@@ -277,9 +284,9 @@ class TurtleLab(TkinterApp):
         name, path = self.promptForSaveAsFile()
         if not name: return
         name = StringVar(value=name)
-        editor = self.getEditorSpaceWidget(activeTabId)
+        editor = self.getEditorSpaceWidgetFromId(activeTabId)
         # Change the name label of the tab block
-        tabBlock = self.getTabSpaceWidget(activeTabId)
+        tabBlock = self.getTabSpaceWidgetFromId(activeTabId)
         tabBlockLabel = tabBlock.winfo_children()[0].winfo_children()[0].configure(textvariable=name)
         fileObj = FileObject(activeTabId, name, path, tabBlock, editor)
         fileObj.save()
