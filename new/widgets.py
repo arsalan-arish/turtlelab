@@ -183,6 +183,9 @@ class TurtleCanvas(Canvas):
         self.s = TurtleScreen(self)
         self.t = RawTurtle(self.s)
         self.t.shape("arrow")
+        self.t.penup()
+        self.t.goto(150, -150)
+        self.t.pendown()
         self.s.update()
 
     def execute(self, code: str):

@@ -88,3 +88,32 @@ class TkinterApp(ABC):
         )
         if not filepath: return None, None
         return (Path(filepath).name, Path(filepath))
+    
+
+
+
+
+
+"""
+self.isFile = isFile
+
+        if not isFile: assert not newFile, "if newFile is True, isFile must be True"
+        if isFile: 
+            assert nameVar.get() == "", "If isFile is True, The nameVar must be an empty StringVar"
+            from widgets import Editor
+            assert type(widgets[0]) == Editor, "If isFile is True, The first widget in widgets list must be a Editor"
+
+        self.fileObj = None
+        if isFile and not newFile:
+            filepath = Path(filedialog.askopenfilename(
+                initialdir=os.getcwd(),
+                defaultextension=".py",
+                title="Open File",
+                filetypes=[("All files", "*.*")],
+            ))
+            self.fileObj = FileObject(id, nameVar, filepath, self.tabSpaceBlock, self.widgets[0])
+        elif isFile and newFile:
+            filepath = None 
+            self.fileObj = FileObject(id, nameVar, filepath, self.tabSpaceBlock, self.widgets[0])
+
+"""

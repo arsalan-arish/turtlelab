@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from tkinter import *
+from tkinter import messagebox
 
 from tkApp import TkinterApp
 from objects import FileObject, TabObject
@@ -32,15 +33,12 @@ class TurtleLab(TkinterApp):
             "uniqueIdCounter": 1,
 
             #* All below state variables are automatically managed by:
-            #* - FileObject instances
             #* - TabObject instances
             #* - removeTabObject method
             #* - reOpenLastClosedTab method
             #! hence they should not modified anywhere else
             "TabObjects":    [],
-            "FileObjects":   [],
             "OldTabObjects": [],
-            "OldFileObjects":[],
             "activeTabObj":  [],
             #! Only 1 activeTabObj. A list is only used so that its mutable ref can be passed to TabObject, and it can mutate it itself when it activates and deactivates
         }
@@ -63,7 +61,7 @@ class TurtleLab(TkinterApp):
         self.root.bind("<Control-Shift-S>", lambda e: self.saveAs())
         self.root.bind("<Control-Shift-P>", lambda e: self.toggleComponent("panel"))
         self.root.bind("<Escape>", lambda e: self.handleEscape())
-        self.root.bind("<Control-w>", lambda e: self.state["activeTabObj"][0].destroy() if self.state["activeTabObj"] else None)
+        self.root.bind("<Control-w>", lambda e: self.removeTabObject(self.state["activeTabObj"][0].id) if self.state["activeTabObj"] else None)
         self.root.bind("<Control-Shift-T>", lambda e: self.reOpenLastClosedTab())
 
 
@@ -120,14 +118,8 @@ class TurtleLab(TkinterApp):
         for i in range(len(self.state["TabObjects"])):
             if self.state["TabObjects"][i].id == id:
                 self.state["OldTabObjects"].append(self.state["TabObjects"][i])
-                self.state["TabObjects"][i].remove()
+                self.state["TabObjects"][i].garbage()
                 del self.state["TabObjects"][i]
-                break
-        # Also check if a FileObject with the same id exists, and then remove it 
-        for i in range(len(self.state["FileObjects"])):
-            if self.state["FileObjects"][i].id == id:
-                self.state["OldFileObjects"].append(self.state["FileObjects"][i])
-                del self.state["FileObjects"][i]
                 break
 
 
@@ -173,8 +165,10 @@ class TurtleLab(TkinterApp):
         canvas = TurtleCanvas(self.components["rightFrame"])
         editor = Editor(self.components["leftFrame"]); editor.focus()
         name = StringVar(value="New File")
-        tab = TabObject(id, name, self.components["tabSpace"], [editor, canvas],
+        tab = TabObject(id, name, self.components["tabSpace"], [editor, canvas], True, None,
                         self.state["activeTabObj"], self.state["TabObjects"], self.removeTabObject)
+        fileObj = FileObject(id, name, None, tab.tabSpaceBlock, editor)
+        tab.fileObject = fileObj
         tab.activate()
 
     def openFile(self):
@@ -184,10 +178,10 @@ class TurtleLab(TkinterApp):
         filename = StringVar(value=filename)
         editor = Editor(self.components["leftFrame"]); editor.insert("end", data); editor.focus()
         canvas = TurtleCanvas(self.components["rightFrame"])
-        tab = TabObject(id, filename, self.components["tabSpace"], [editor, canvas], 
+        tab = TabObject(id, filename, self.components["tabSpace"], [editor, canvas], True, None,
                         self.state["activeTabObj"], self.state["TabObjects"], self.removeTabObject)
-        fileObj = FileObject(id, filename, filepath, tab.tabSpaceBlock , editor, 
-                             self.state["FileObjects"])
+        fileObj = FileObject(id, filename, filepath, tab.tabSpaceBlock , editor)
+        tab.fileObject = fileObj
         tab.activate()
 
     def openFolder(self):
@@ -196,50 +190,26 @@ class TurtleLab(TkinterApp):
         self.loadDirectory(path)
 
     def save(self):
-        activeTab = self.state["activeTab"]
+        activeTab = self.state["activeTabObj"][0]
         if not activeTab: messagebox.showinfo("Save File", "Please select an appropriate file tab to save the file"); return
-        for obj in self.state["FileObjects"]:
-            if obj.id == activeTab.id:
-                obj.save()
-                return
-        # At this point, it means that the current active tab is not associated with a file object (either it is a new file or not a file at all)
-        editorSpaceWidget = self.getEditorSpaceWidgetFromId(activeTabId)
-        if type(editorSpaceWidget) == Editor:
-            self.saveAs()
-        else:
-            messagebox.showinfo("Save File", "Please select an appropriate file tab to save the file"); return
+        if not activeTab.fileObject: messagebox.showinfo("Save File", "Please select an appropriate file tab to save the file"); return
+        activeTab.fileObject.save()
+            
 
     def saveAs(self):
-        activeTabId = self.state["activeTab"]
-        if not activeTabId: messagebox.showinfo("Save File", "Please select an appropriate file tab to save the file"); return
-        name, path = self.promptForSaveAsFile()
-        if not name: return
-        name = StringVar(value=name)
-        editor = self.getEditorSpaceWidgetFromId(activeTabId)
-        # Change the name label of the tab block
-        tabBlock = self.getTabSpaceWidgetFromId(activeTabId)
-        tabBlockLabel = tabBlock.winfo_children()[0].winfo_children()[0].configure(textvariable=name)
-        fileObj = FileObject(activeTabId, name, path, tabBlock, editor)
-        fileObj.save()
-        self.state["FileObjects"].append(fileObj)
+        pass
 
     def reOpenLastClosedTab(self):
-        try: oldTabObj = self.state["OldTabObjects"].pop()
-        except Exception: return
-        oldFileObj = None
         try: 
-            for obj in reversed(self.state["OldFileObjects"]):
-                if obj.id == oldTabObj.id:
-                    oldFileObj = obj
-        except: return
-
+            oldTabObj = self.state["OldTabObjects"].pop()
+        except Exception:
+            return
         self.state["TabObjects"].append(oldTabObj)
-        self.state["FileObjects"].append(oldFileObj) if oldFileObj else None
         oldTabObj.recycle()
         oldTabObj.activate()
 
     def execute(self):
-
+        pass
 
 def app():
     root = Tk()
@@ -248,3 +218,19 @@ def app():
 
 #! Only for testing
 app()
+
+
+"""
+     activeTab = self.state["activeTab"]
+            if not activeTab: messagebox.showinfo("Save File", "Please select an appropriate file tab to save the file"); return
+            name, path = self.promptForSaveAsFile()
+            if not name: return
+            name = StringVar(value=name)
+            editor = self.getEditorSpaceWidgetFromId(activeTabId)
+            # Change the name label of the tab block
+            tabBlock = self.getTabSpaceWidgetFromId(activeTabId)
+            tabBlockLabel = tabBlock.winfo_children()[0].winfo_children()[0].configure(textvariable=name)
+            fileObj = FileObject(activeTabId, name, path, tabBlock, editor)
+            fileObj.save()
+            self.state["FileObjects"].append(fileObj)
+"""

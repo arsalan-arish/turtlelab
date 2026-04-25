@@ -1,38 +1,31 @@
 """ Contains objects used by application to group data """
 from tkinter import *
-from tkinter import ttk
+from tkinter import ttk, filedialog, messagebox
+import os
+from pathlib import Path
 
 
 class FileObject:
-    def __init__(self, id, nameVar, filepath, tabBlock,  editor,
-                 globalFileObjects: list):
+    def __init__(self, id, nameVar, filepath, tabBlock, editor):
         self.id = id
         self.nameVar = nameVar
         self.filepath = filepath
         self.tabBlock = tabBlock
         self.editor = editor
-        globalFileObjects.append(self)
+        if filepath: self.trackModification()
 
+        
+    def trackModification(self):
         self.isSaved = BooleanVar(value=True)
         self.isSaved.trace_add("write", self.putModifiedSign)
-
         self.sign = Label(self.tabBlock, text="*", name="sign")
-
         self.editor.edit_modified(False)
         self.editor.bind("<<Modified>>", self.on_modified)
 
     def on_modified(self, *_):
         if self.editor.edit_modified():
             self.isSaved.set(False)
-            self.editor.edit_modified(False)  # critical
-
-    def save(self):
-        data = self.editor.get("1.0", "end-1c")
-        with open(self.filepath, "w") as f:
-            f.write(data)
-
-        self.isSaved.set(True)
-        self.editor.edit_modified(False)  # reset after save
+            self.editor.edit_modified(False) # critical
 
     def putModifiedSign(self, *_):
         if self.isSaved.get():
@@ -41,19 +34,40 @@ class FileObject:
             self.sign.pack(side="right")
 
 
+    def save(self):
+        if not self.filepath: 
+            self.filepath = filedialog.asksaveasfilename(
+                title="Save file as",
+                defaultextension=".txt",
+                initialdir=os.getcwd(),
+            )
+            if not self.filepath: return
+            self.filepath = Path(self.filepath)
+            self.nameVar.set(self.filepath.name)
+            self.trackModification()
+            
+        data = self.editor.get("1.0", "end-1c")
+        with open(self.filepath, "w") as f:
+            f.write(data)
+
+        self.isSaved.set(True)
+        self.editor.edit_modified(False)
+
+
 
 class TabObject:
-    def __init__(self, id: int, nameVar: StringVar, tabSpace: Frame, widgets: list, 
-                 globalActiveTabObj: list, globalTabObjects: list, onCrossPressFunction: function):
+    def __init__(self, id: int, nameVar: StringVar, tabSpace: Frame, widgets: list, isFile: bool, fileObject: FileObject | None,
+                 globalActiveTabObj: list, globalTabObjects: list, onCrossIconPressFunction: function):
         self.id = id
         self.nameVar = nameVar
         self.tabSpace = tabSpace
         self.widgets = widgets
         self.activeTabObj = globalActiveTabObj
         self.TabObjects = globalTabObjects
-
+        self.fileObject = fileObject
+        
         self.TabObjects.append(self)
-        self.addTabSpaceBlock(onCrossPressFunction)
+        self.addTabSpaceBlock(onCrossIconPressFunction)
         self.activate()
 
     def addTabSpaceBlock(self, onCrossPressFunction: function):
@@ -87,7 +101,7 @@ class TabObject:
         for widget in self.widgets:
             widget.hide()
 
-    def remove(self):
+    def garbage(self):
         self.tabSpaceBlock.pack_forget()
         [widget.hide() for widget in self.widgets]
 
