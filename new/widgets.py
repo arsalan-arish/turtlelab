@@ -16,13 +16,18 @@ ______________________________________________________________
 commandPanel => VSCode style 
 """
 
-from tkinter import ttk
+from tkinter import ttk, messagebox
 from tkinter import *
 from turtle import Turtle, RawTurtle, TurtleScreen
+import traceback
+
+"""
+Protocol => Each widget must implement display() and hide() methods for itself
+"""
 
 class TopBar(ttk.Frame):
     def __init__(self, root: Tk):
-        super().__init__(root, height=40, bd=1, relief="solid")
+        super().__init__(root, height=40, borderwidth=1, relief="solid")
         self.grid_propagate(False)
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=5, uniform="topBar")
@@ -36,7 +41,7 @@ class TopBar(ttk.Frame):
 
 class Mainframe(ttk.Frame):
     def __init__(self, root: Tk):
-        super().__init__(root, bd=1, relief="solid")
+        super().__init__(root, borderwidth=1, relief="solid")
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=5, uniform="1")
         self.columnconfigure(1, weight=6, uniform="1")
@@ -49,7 +54,7 @@ class Mainframe(ttk.Frame):
 
 class StatusBar(ttk.Frame):
     def __init__(self, root: Tk):
-        super().__init__(root, height=25, bd=1, relief="solid")
+        super().__init__(root, height=25, borderwidth=1, relief="solid")
         self.pack_propagate(False)
 
     def display(self):
@@ -61,7 +66,7 @@ class StatusBar(ttk.Frame):
 
 class TabSpace(ttk.Frame):
     def __init__(self, root: Tk):
-        super().__init__(root, bd=1, relief="solid")
+        super().__init__(root, borderwidth=1, relief="solid")
         self.pack_propagate(False)
 
     def display(self):
@@ -72,7 +77,7 @@ class TabSpace(ttk.Frame):
 
 class ConfigSpace(ttk.Frame):
     def __init__(self, root: Tk):
-        super().__init__(root, bd=1, relief="solid")
+        super().__init__(root, borderwidth=1, relief="solid")
         self.pack_propagate(False)
 
     def display(self):
@@ -84,7 +89,7 @@ class ConfigSpace(ttk.Frame):
 
 class LeftFrame(ttk.Frame):
     def __init__(self, root: Tk):
-        super().__init__(root, bd=1, relief="solid")
+        super().__init__(root, borderwidth=1, relief="solid")
     
     def display(self):
         self.grid(row=0, column=0, sticky="nsew")
@@ -94,7 +99,7 @@ class LeftFrame(ttk.Frame):
 
 class RightFrame(ttk.Frame):
     def __init__(self, root: Tk):
-        super().__init__(root, bd=1, relief="solid")
+        super().__init__(root, borderwidth=1, relief="solid")
 
     def display(self):
         self.grid(row=0, column=1, sticky="nsew")
@@ -105,7 +110,7 @@ class RightFrame(ttk.Frame):
 
 class CommandPanel(ttk.Frame):
     def __init__(self, root: Tk):
-        super().__init__(root, height=400, width=530, bg="black")
+        super().__init__(root, height=400, width=530)
         self.pack_propagate(False)
 
         entryFrame = Frame(self, height=30, width=520)
@@ -169,15 +174,48 @@ class Editor(Text):
 
 class TurtleCanvas(Canvas):
     """A tk Canvas with turtle embedded"""
-    def __init__(self, root: Tk):
-        super().__init__(root, bg="blue")
+    def __init__(self, parent):
+        super().__init__(parent, bg="white")
+        self.setupNewTurtle()
 
     def setupNewTurtle(self):
         self.delete("all")
-        self.screen = TurtleScreen(self)
-        self.t = RawTurtle(self.screen)
+        self.s = TurtleScreen(self)
+        self.t = RawTurtle(self.s)
         self.t.shape("arrow")
-        self.screen.update()
+        self.s.update()
+
+    def execute(self, code: str):
+        def strip_comments(code: str) -> str:
+            lines = []
+            for line in code.splitlines():
+                if "#" in line:
+                    line = line.split("#", 1)[0]
+                lines.append(line)
+            return "\n".join(lines)
+        code = strip_comments(code)
+        
+        if not code.strip(): return
+        if "import turtle" in code or "from turtle" in code:
+            messagebox.showerror(
+                "Invalid Code",
+                "Do NOT import turtle.\nUse the provided `t` and `s` which are Turtle and Screen objects respectively"
+            ); return
+        
+        self.setupNewTurtle()
+        try:
+            exec(code, {
+                "t": self.t,
+                "s": self.s,
+                "__builtins__": __builtins__,
+            })
+        except Exception:
+            messagebox.showerror(
+                "Execution Error",
+                traceback.format_exc()
+            ); return
+        self.s.update()
+
 
     def display(self):
         self.pack(fill="both", expand=True)

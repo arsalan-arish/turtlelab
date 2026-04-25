@@ -1,9 +1,10 @@
 import os
 from pathlib import Path
+from tkinter import *
 
-from exceptions import TabRefusedToClose
 from tkApp import TkinterApp
 from objects import FileObject, TabObject
+from exceptions import TabRefusedToClose
 from widgets import (
     TopBar,
     Mainframe,
@@ -25,11 +26,23 @@ class TurtleLab(TkinterApp):
         root.iconbitmap("assets/turtle.ico")
         root.geometry("900x600")
         root.state("zoomed")
-
+ 
         state = {
             "panelVisible": False,
-            "activeTab": None,
-            "tabIdCounter": 1,
+            "uniqueIdCounter": 1,
+
+            #* All below state variables are automatically managed by:
+            #* - FileObject instances
+            #* - TabObject instances
+            #* - removeTabObject method
+            #* - reOpenLastClosedTab method
+            #! hence they should not modified anywhere else
+            "TabObjects":    [],
+            "FileObjects":   [],
+            "OldTabObjects": [],
+            "OldFileObjects":[],
+            "activeTabObj":  [],
+            #! Only 1 activeTabObj. A list is only used so that its mutable ref can be passed to TabObject, and it can mutate it itself when it activates and deactivates
         }
 
         self.bind_to_self (
@@ -43,14 +56,15 @@ class TurtleLab(TkinterApp):
         
 
     def bind_events(self):
-        self.root.bind("<Control-n>", lambda e: self.menu_newFile())
-        self.root.bind("<Control-o>", lambda e: self.menu_openFile())
-        self.root.bind("<Control-k>", lambda e: self.menu_openFolder())
-        self.root.bind("<Control-s>", lambda e: self.menu_save())
-        self.root.bind("<Control-Shift-S>", lambda e: self.menu_saveAs())
+        self.root.bind("<Control-n>", lambda e: self.newFile())
+        self.root.bind("<Control-o>", lambda e: self.openFile())
+        self.root.bind("<Control-k>", lambda e: self.openFolder())
+        self.root.bind("<Control-s>", lambda e: self.save())
+        self.root.bind("<Control-Shift-S>", lambda e: self.saveAs())
         self.root.bind("<Control-Shift-P>", lambda e: self.toggleComponent("panel"))
         self.root.bind("<Escape>", lambda e: self.handleEscape())
-        self.root.bind("<Control-w>", lambda e: self.rmTab(self.state["activeTab"]))
+        self.root.bind("<Control-w>", lambda e: self.state["activeTabObj"][0].destroy() if self.state["activeTabObj"] else None)
+        self.root.bind("<Control-Shift-T>", lambda e: self.reOpenLastClosedTab())
 
 
     def build_widget_tree(self):
@@ -83,7 +97,7 @@ class TurtleLab(TkinterApp):
 
     def build_layout(self, components: list[str]):
         if "all" in components:
-            components = list(self.components.keys()) - ["panel"]
+            components = list(self.components.keys()); components.remove("panel")
         for component in components:
             self.components[component].display()
 
@@ -101,5 +115,136 @@ class TurtleLab(TkinterApp):
             self.components[component].hide()
 
 
+    def removeTabObject(self, id: int):
+        if id is None: return
+        for i in range(len(self.state["TabObjects"])):
+            if self.state["TabObjects"][i].id == id:
+                self.state["OldTabObjects"].append(self.state["TabObjects"][i])
+                self.state["TabObjects"][i].remove()
+                del self.state["TabObjects"][i]
+                break
+        # Also check if a FileObject with the same id exists, and then remove it 
+        for i in range(len(self.state["FileObjects"])):
+            if self.state["FileObjects"][i].id == id:
+                self.state["OldFileObjects"].append(self.state["FileObjects"][i])
+                del self.state["FileObjects"][i]
+                break
+
+
+    def handleEscape(self):
+        if self.state["panelVisible"]:
+            self.toggleComponent("panel")
+
+    def getNewId(self) -> int:
+        id = self.state["uniqueIdCounter"]
+        self.state["uniqueIdCounter"] += 1
+        return id
+
     #* ========= NORMAL FUNCTIONS ========= #*
 
+    def loadDirectory(self):
+        pass
+
+    #* ========= MENU ========= #*
+    def build_menu(self):
+
+        self.set_menu(["File", "Edit", "Run"])
+        self.fill_sub_menu (
+            self.sub_menus["File"],
+            {
+                "New File": self.newFile,
+                "Open File": self.openFile,
+                "Open Folder": self.openFolder,
+                "Save": self.save,
+                "Save As": self.saveAs,
+                "Open Last Closed Tab": self.reOpenLastClosedTab,
+            }
+        )
+        self.fill_sub_menu (
+            self.sub_menus["Run"],
+            {
+                "Execute current file": self.execute,
+            }
+        )
+        
+
+    def newFile(self):
+        id = self.getNewId()
+        canvas = TurtleCanvas(self.components["rightFrame"])
+        editor = Editor(self.components["leftFrame"]); editor.focus()
+        name = StringVar(value="New File")
+        tab = TabObject(id, name, self.components["tabSpace"], [editor, canvas],
+                        self.state["activeTabObj"], self.state["TabObjects"], self.removeTabObject)
+        tab.activate()
+
+    def openFile(self):
+        id = self.getNewId()
+        filename, filepath, data = self.promptForFile()
+        if not filename: return
+        filename = StringVar(value=filename)
+        editor = Editor(self.components["leftFrame"]); editor.insert("end", data); editor.focus()
+        canvas = TurtleCanvas(self.components["rightFrame"])
+        tab = TabObject(id, filename, self.components["tabSpace"], [editor, canvas], 
+                        self.state["activeTabObj"], self.state["TabObjects"], self.removeTabObject)
+        fileObj = FileObject(id, filename, filepath, tab.tabSpaceBlock , editor, 
+                             self.state["FileObjects"])
+        tab.activate()
+
+    def openFolder(self):
+        path = self.promptForFolder()
+        if not path: return
+        self.loadDirectory(path)
+
+    def save(self):
+        activeTab = self.state["activeTab"]
+        if not activeTab: messagebox.showinfo("Save File", "Please select an appropriate file tab to save the file"); return
+        for obj in self.state["FileObjects"]:
+            if obj.id == activeTab.id:
+                obj.save()
+                return
+        # At this point, it means that the current active tab is not associated with a file object (either it is a new file or not a file at all)
+        editorSpaceWidget = self.getEditorSpaceWidgetFromId(activeTabId)
+        if type(editorSpaceWidget) == Editor:
+            self.saveAs()
+        else:
+            messagebox.showinfo("Save File", "Please select an appropriate file tab to save the file"); return
+
+    def saveAs(self):
+        activeTabId = self.state["activeTab"]
+        if not activeTabId: messagebox.showinfo("Save File", "Please select an appropriate file tab to save the file"); return
+        name, path = self.promptForSaveAsFile()
+        if not name: return
+        name = StringVar(value=name)
+        editor = self.getEditorSpaceWidgetFromId(activeTabId)
+        # Change the name label of the tab block
+        tabBlock = self.getTabSpaceWidgetFromId(activeTabId)
+        tabBlockLabel = tabBlock.winfo_children()[0].winfo_children()[0].configure(textvariable=name)
+        fileObj = FileObject(activeTabId, name, path, tabBlock, editor)
+        fileObj.save()
+        self.state["FileObjects"].append(fileObj)
+
+    def reOpenLastClosedTab(self):
+        try: oldTabObj = self.state["OldTabObjects"].pop()
+        except Exception: return
+        oldFileObj = None
+        try: 
+            for obj in reversed(self.state["OldFileObjects"]):
+                if obj.id == oldTabObj.id:
+                    oldFileObj = obj
+        except: return
+
+        self.state["TabObjects"].append(oldTabObj)
+        self.state["FileObjects"].append(oldFileObj) if oldFileObj else None
+        oldTabObj.recycle()
+        oldTabObj.activate()
+
+    def execute(self):
+
+
+def app():
+    root = Tk()
+    TurtleLab(root)
+    root.mainloop()
+
+#! Only for testing
+app()
