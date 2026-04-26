@@ -23,13 +23,13 @@ turtlelab test.py
 
 ## Important Rules
 
-- Use provided `t` (turtle) and `screen` objects directly
+- Use provided `t` (turtle) and `s` (screen) objects directly
 - Do NOT use `import turtle` in your code
 
 ## API
 
 Your code has access to:
 - `t` - RawTurtle object with full turtle graphics API
-- `screen` - TurtleScreen for the canvas
+- `s` - TurtleScreen for the canvas
 
 **More features will be coming soon!**

@@ -4,6 +4,7 @@ from tkinter import ttk, filedialog, messagebox
 import os
 from pathlib import Path
 
+from .widgets import Editor, TurtleCanvas
 
 class FileObject:
     def __init__(self, id, nameVar, filepath, tabBlock, editor):
@@ -34,7 +35,7 @@ class FileObject:
             self.sign.pack(side="right")
 
 
-    def save(self):
+    def save(self, returnString: bool = False) -> None | str:
         if not self.filepath: 
             self.filepath = filedialog.asksaveasfilename(
                 title="Save file as",
@@ -52,6 +53,7 @@ class FileObject:
 
         self.isSaved.set(True)
         self.editor.edit_modified(False)
+        if returnString: return data
 
 
 
@@ -65,7 +67,11 @@ class TabObject:
         self.activeTabObj = globalActiveTabObj
         self.TabObjects = globalTabObjects
         self.fileObject = fileObject
-        
+        self.isFile = isFile
+
+        if isFile:
+            assert isinstance(widgets[0], Editor) and isinstance(widgets[1], TurtleCanvas)
+
         self.TabObjects.append(self)
         self.addTabSpaceBlock(onCrossIconPressFunction)
         self.activate()

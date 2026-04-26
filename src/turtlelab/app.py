@@ -3,10 +3,10 @@ from pathlib import Path
 from tkinter import *
 from tkinter import messagebox
 
-from tkApp import TkinterApp
-from objects import FileObject, TabObject
-from exceptions import TabRefusedToClose
-from widgets import (
+from .tkApp import TkinterApp
+from .objects import FileObject, TabObject
+from .exceptions import TabRefusedToClose
+from .widgets import (
     TopBar,
     Mainframe,
     StatusBar,
@@ -14,22 +14,26 @@ from widgets import (
     ConfigSpace,
     LeftFrame,
     RightFrame,
+    SideBarButton,
+    SideBar,
+
     CommandPanel,
     Editor,
     TurtleCanvas,
 )
 
-os.chdir(Path(__file__).parent)
 
 class TurtleLab(TkinterApp):
     def __init__(self, root: Tk):
         root.title("Turtlelab IDE")
-        root.iconbitmap("assets/turtle.ico")
+        iconpath = str(Path(__file__).parent) + "/assets/turtle.ico"
+        root.iconbitmap(iconpath)
         root.geometry("900x600")
         root.state("zoomed")
  
         state = {
             "panelVisible": False,
+            "sideBarVisible": False,
             "uniqueIdCounter": 1,
 
             #* All below state variables are automatically managed by:
@@ -51,18 +55,19 @@ class TurtleLab(TkinterApp):
         self.bind_events()
         self.build_widget_tree()
         self.build_layout(["all"])
-        
+
 
     def bind_events(self):
-        self.root.bind("<Control-n>", lambda e: self.newFile())
-        self.root.bind("<Control-o>", lambda e: self.openFile())
-        self.root.bind("<Control-k>", lambda e: self.openFolder())
-        self.root.bind("<Control-s>", lambda e: self.save())
-        self.root.bind("<Control-Shift-S>", lambda e: self.saveAs())
-        self.root.bind("<Control-Shift-P>", lambda e: self.toggleComponent("panel"))
-        self.root.bind("<Escape>", lambda e: self.handleEscape())
-        self.root.bind("<Control-w>", lambda e: self.removeTabObject(self.state["activeTabObj"][0].id) if self.state["activeTabObj"] else None)
-        self.root.bind("<Control-Shift-T>", lambda e: self.reOpenLastClosedTab())
+        b = self.root.bind
+        b("<Control-n>", lambda e: self.newFile())
+        b("<Control-o>", lambda e: self.openFile())
+        b("<Control-k>", lambda e: self.openFolder())
+        b("<Control-s>", lambda e: self.save())
+        b("<Control-Shift-P>", lambda e: self.toggleComponent("panel"))
+        b("<Escape>", lambda e: self.handleEscape())
+        b("<Control-w>", lambda e: self.removeTabObject(self.state["activeTabObj"][0].id) if self.state["activeTabObj"] else None)
+        b("<Control-Shift-T>", lambda e: self.reOpenLastClosedTab())
+        b("<<ExecuteCode>>", lambda e: self.execute())
 
 
     def build_widget_tree(self):
@@ -71,20 +76,26 @@ class TurtleLab(TkinterApp):
         statusBar = StatusBar(self.root)
         panel = CommandPanel(self.root)
 
+        sideBarButton = SideBarButton(topBar, lambda: self.toggleComponent("sideBar"))
         tabSpace = TabSpace(topBar)
         configSpace = ConfigSpace(topBar)
 
+        sideBar = SideBar(mainframe)
         leftFrame = LeftFrame(mainframe)
         rightFrame = RightFrame(mainframe)
 
         components = {
-            "topBar": topBar,
+            "topBar":    topBar,
             "mainframe": mainframe,
             "statusBar": statusBar,
-            "panel": panel,
-            "tabSpace": tabSpace,
-            "configSpace": configSpace,
-            "leftFrame": leftFrame,
+            "panel":     panel,
+
+            "sideBarButton": sideBarButton,
+            "tabSpace":      tabSpace,
+            "configSpace":   configSpace,
+
+            "sideBar":    sideBar,
+            "leftFrame":  leftFrame,
             "rightFrame": rightFrame,
         }
         # The order of these components is critical
@@ -95,7 +106,7 @@ class TurtleLab(TkinterApp):
 
     def build_layout(self, components: list[str]):
         if "all" in components:
-            components = list(self.components.keys()); components.remove("panel")
+            components = list(self.components.keys()); components.remove("panel"); components.remove("sideBar")
         for component in components:
             self.components[component].display()
 
@@ -108,8 +119,10 @@ class TurtleLab(TkinterApp):
             print(e, "This component cannot be toggled")
 
         if self.state[property]:
+            self.components["mainframe"].event_generate(f"<<{component}display>>")
             self.components[component].display()
         else:
+            self.components["mainframe"].event_generate(f"<<{component}hide>>")
             self.components[component].hide()
 
 
@@ -144,18 +157,17 @@ class TurtleLab(TkinterApp):
         self.fill_sub_menu (
             self.sub_menus["File"],
             {
-                "New File": self.newFile,
-                "Open File": self.openFile,
-                "Open Folder": self.openFolder,
-                "Save": self.save,
-                "Save As": self.saveAs,
-                "Open Last Closed Tab": self.reOpenLastClosedTab,
+                "New File      Ctrl-N": self.newFile,
+                "Open File     Ctrl-O": self.openFile,
+                "Open Folder   Ctrl-K": self.openFolder,
+                "Save          Ctrl-S": self.save,
+                "Open Recent Tab   Ctrl-Shift-T": self.reOpenLastClosedTab,
             }
         )
         self.fill_sub_menu (
             self.sub_menus["Run"],
             {
-                "Execute current file": self.execute,
+                "Execute ▶️  Ctrl-Enter": self.execute,
             }
         )
         
@@ -171,10 +183,15 @@ class TurtleLab(TkinterApp):
         tab.fileObject = fileObj
         tab.activate()
 
-    def openFile(self):
+    def openFile(self, filepath: Path | None = None):
         id = self.getNewId()
-        filename, filepath, data = self.promptForFile()
-        if not filename: return
+        if not filepath:
+            filename, filepath, data = self.promptForFile()
+            if not filename: return
+        else:
+            filename = filepath.name
+            data = filepath.read_text()
+
         filename = StringVar(value=filename)
         editor = Editor(self.components["leftFrame"]); editor.insert("end", data); editor.focus()
         canvas = TurtleCanvas(self.components["rightFrame"])
@@ -190,14 +207,12 @@ class TurtleLab(TkinterApp):
         self.loadDirectory(path)
 
     def save(self):
-        activeTab = self.state["activeTabObj"][0]
-        if not activeTab: messagebox.showinfo("Save File", "Please select an appropriate file tab to save the file"); return
-        if not activeTab.fileObject: messagebox.showinfo("Save File", "Please select an appropriate file tab to save the file"); return
+        try:
+            activeTab = self.state["activeTabObj"][0]
+        except IndexError:
+            return
+        if not activeTab.isFile: messagebox.showinfo("Save File", "Please select an appropriate file tab to save the file"); return
         activeTab.fileObject.save()
-            
-
-    def saveAs(self):
-        pass
 
     def reOpenLastClosedTab(self):
         try: 
@@ -209,28 +224,22 @@ class TurtleLab(TkinterApp):
         oldTabObj.activate()
 
     def execute(self):
-        pass
+        try:
+            activeTab = self.state["activeTabObj"][0]
+        except IndexError:
+            return
+        if not activeTab.isFile: messagebox.showinfo("Run File", "Please select an appropriate file tab to execute the file"); return
+        code = activeTab.fileObject.save(returnString=True)
+        if not code: return
+        canvas = activeTab.widgets[1] # See the protocol on __init__ function of TabObject Class
+        canvas.execute(code)
 
-def app():
+
+
+def App(filepath: Path | None):
     root = Tk()
-    TurtleLab(root)
+    app = TurtleLab(root)
+    if filepath:
+        app.openFile(filepath)
     root.mainloop()
-
-#! Only for testing
-app()
-
-
-"""
-     activeTab = self.state["activeTab"]
-            if not activeTab: messagebox.showinfo("Save File", "Please select an appropriate file tab to save the file"); return
-            name, path = self.promptForSaveAsFile()
-            if not name: return
-            name = StringVar(value=name)
-            editor = self.getEditorSpaceWidgetFromId(activeTabId)
-            # Change the name label of the tab block
-            tabBlock = self.getTabSpaceWidgetFromId(activeTabId)
-            tabBlockLabel = tabBlock.winfo_children()[0].winfo_children()[0].configure(textvariable=name)
-            fileObj = FileObject(activeTabId, name, path, tabBlock, editor)
-            fileObj.save()
-            self.state["FileObjects"].append(fileObj)
-"""
+    
