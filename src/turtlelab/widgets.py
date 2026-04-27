@@ -266,7 +266,7 @@ class TurtleCanvas(Canvas):
 
     def execute(self, code: str):
         if not code.strip(): return
-        if "import turtle" in code or "from turtle" in code:
+        if "import turtle " in code or "from turtle " in code:
             messagebox.showerror(
                 "Invalid Code",
                 "Do NOT import turtle.\nUse the provided `t` and `s` which are Turtle and Screen objects respectively"
@@ -279,6 +279,9 @@ class TurtleCanvas(Canvas):
                 "s": self.s,
                 "__builtins__": __builtins__,
             })
+        except TclError:
+            # The root window closed but exec() tried to execute more
+            return
         except Exception:
             messagebox.showerror(
                 "Execution Error",

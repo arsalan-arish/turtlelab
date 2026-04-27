@@ -5,16 +5,12 @@ import random
 # Celestial Lotus Mandala
 # -----------------------------
 
+s.bgcolor("#060816")
+s.colormode(255)
 
-screen = s
-screen.bgcolor("#060816")
-screen.colormode(255)
-screen.tracer(0, 0)
-
-pen = t
-pen.speed(3)
-pen.pensize(2)
-pen.penup()
+t.speed(0)
+t.pensize(2)
+t.penup()
 
 rng = random.Random(42)
 
@@ -181,18 +177,17 @@ def draw_frost_filaments(p):
         draw_glow_curve(p, filament, 0, 2 * math.pi, 1600, c, pensize=1, glow_levels=2)
 
 def draw_art():
-    draw_background_sparks(pen)
-    draw_outer_mandala(pen)
-    draw_frost_filaments(pen)
-    draw_orbit_arches(pen)
-    draw_inner_filigree(pen)
-    draw_center_flower(pen)
+    draw_background_sparks(t)
+    draw_outer_mandala(t)
+    draw_frost_filaments(t)
+    draw_orbit_arches(t)
+    draw_inner_filigree(t)
+    draw_center_flower(t)
 
-    pen.penup()
-    pen.goto(0, -3)
-    pen.dot(16, rgb("#fff6d6"))
-    pen.goto(0, 0)
-    pen.dot(8, rgb("#ffffff"))
+    t.penup()
+    t.goto(0, -3)
+    t.dot(16, rgb("#fff6d6"))
+    t.goto(0, 0)
+    t.dot(8, rgb("#ffffff"))
 
 draw_art()
-screen.update()
