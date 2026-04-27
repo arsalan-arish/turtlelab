@@ -12,7 +12,7 @@ authors = [
 keywords = ["turtle", "turtleIDE", "interactiveturtle"]
 
 
-[project.gui-scripts]
+[project.scripts]
 turtlelab = "turtlelab.__main__:main"
 
 
