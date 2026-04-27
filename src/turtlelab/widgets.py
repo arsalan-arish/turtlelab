@@ -263,7 +263,6 @@ class TurtleCanvas(Canvas):
         self.t.pendown()
         self.t.speed(3)
 
-        # self.s.update()
 
     def execute(self, code: str):
         if not code.strip(): return
@@ -285,7 +284,6 @@ class TurtleCanvas(Canvas):
                 "Execution Error",
                 traceback.format_exc()
             ); return
-        # self.s.update()
 
 
     def display(self):
