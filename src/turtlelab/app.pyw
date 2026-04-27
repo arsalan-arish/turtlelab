@@ -67,6 +67,7 @@ class TurtleLab(TkinterApp):
         b("<Escape>", lambda e: self.handleEscape())
         b("<Control-w>", lambda e: self.removeTabObject(self.state["activeTabObj"][0].id) if self.state["activeTabObj"] else None)
         b("<Control-Shift-T>", lambda e: self.reOpenLastClosedTab())
+        
         b("<<ExecuteCode>>", lambda e: self.execute())
 
 
@@ -177,10 +178,9 @@ class TurtleLab(TkinterApp):
         canvas = TurtleCanvas(self.components["rightFrame"])
         editor = Editor(self.components["leftFrame"]); editor.focus()
         name = StringVar(value="New File")
-        tab = TabObject(id, name, self.components["tabSpace"], [editor, canvas], True, None,
+        fileObj = FileObject(id, name, None, editor)
+        tab = TabObject(id, name, self.components["tabSpace"], [editor, canvas], True, fileObj,
                         self.state["activeTabObj"], self.state["TabObjects"], self.removeTabObject)
-        fileObj = FileObject(id, name, None, tab.tabSpaceBlock, editor)
-        tab.fileObject = fileObj
         tab.activate()
 
     def openFile(self, filepath: Path | None = None):
@@ -195,10 +195,9 @@ class TurtleLab(TkinterApp):
         filename = StringVar(value=filename)
         editor = Editor(self.components["leftFrame"]); editor.insert("end", data); editor.focus()
         canvas = TurtleCanvas(self.components["rightFrame"])
-        tab = TabObject(id, filename, self.components["tabSpace"], [editor, canvas], True, None,
+        fileObj = FileObject(id, filename, filepath, editor)
+        tab = TabObject(id, filename, self.components["tabSpace"], [editor, canvas], True, fileObj,
                         self.state["activeTabObj"], self.state["TabObjects"], self.removeTabObject)
-        fileObj = FileObject(id, filename, filepath, tab.tabSpaceBlock , editor)
-        tab.fileObject = fileObj
         tab.activate()
 
     def openFolder(self):

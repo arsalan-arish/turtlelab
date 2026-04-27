@@ -8,7 +8,6 @@ def main():
         raise Exception("Only 1 argument is supported, which is filename to load")
     if len(argv) == 1: 
         filepath = Path.cwd() / argv[0]
-        print(filepath)
         if not filepath.exists():
             with open(filepath, "w"): pass
         if not filepath.is_file():

@@ -7,11 +7,11 @@ from pathlib import Path
 from .widgets import Editor, TurtleCanvas
 
 class FileObject:
-    def __init__(self, id, nameVar, filepath, tabBlock, editor):
+    def __init__(self, id, nameVar, filepath, editor):
         self.id = id
         self.nameVar = nameVar
         self.filepath = filepath
-        self.tabBlock = tabBlock
+        self.tabSpaceBlock = None # will be assigned by the TabObject as soon as it gets the FileObject instance
         self.editor = editor
         if filepath: self.trackModification()
 
@@ -19,7 +19,7 @@ class FileObject:
     def trackModification(self):
         self.isSaved = BooleanVar(value=True)
         self.isSaved.trace_add("write", self.putModifiedSign)
-        self.sign = Label(self.tabBlock, text="*", name="sign")
+        self.sign = Label(self.tabSpaceBlock, text="*", name="sign")
         self.editor.edit_modified(False)
         self.editor.bind("<<Modified>>", self.on_modified)
 
@@ -89,6 +89,7 @@ class TabObject:
 
         label.bind("<ButtonPress-1>", lambda e: self.activate())
         self.tabSpaceBlock = block
+        self.fileObject.tabSpaceBlock = block
 
     def activate(self):
         if self.activeTabObj: 

@@ -111,6 +111,38 @@ class ConfigSpace(ttk.Frame):
     def __init__(self, parent):
         super().__init__(parent, borderwidth=1, relief="solid")
         self.pack_propagate(False)
+        self.setupButtons()
+
+    def setupButtons(self):
+        animation = BooleanVar(value=True); animation.key = "animation"
+
+        self.variables = [
+            animation,
+
+        ]
+        self.buttons = [
+            ttk.Checkbutton(self, text="Animations", onvalue=True, offvalue=False, variable=animation),
+
+        ]
+
+        for var in self.variables:
+            var.trace_add("write", lambda *_, v=var: self.handleVariable(v))
+        for button in self.buttons:
+            button.pack(side="left")
+
+
+    def handleVariable(self, var):
+        """ Generate standardized virtual events """
+        key = var.key
+        value = var.get()
+        if isinstance(var, BooleanVar):
+            if value:
+                self.event_generate(f"<<{key}enable>>")
+            else:
+                self.event_generate(f"<<{key}disable>>")
+        elif isinstance(var, StringVar):
+
+
 
     def display(self):
         self.grid(row=0, column=2, sticky="nsew")
@@ -231,7 +263,7 @@ class TurtleCanvas(Canvas):
         self.t.pendown()
         self.t.speed(3)
 
-        self.s.update()
+        # self.s.update()
 
     def execute(self, code: str):
         if not code.strip(): return
@@ -253,7 +285,7 @@ class TurtleCanvas(Canvas):
                 "Execution Error",
                 traceback.format_exc()
             ); return
-        self.s.update()
+        # self.s.update()
 
 
     def display(self):
