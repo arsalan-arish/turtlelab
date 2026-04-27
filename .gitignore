@@ -11,5 +11,4 @@ wheels/
 *.env*
 *local*
 *vscode*
-
-/test.py
+/.github/ignore/

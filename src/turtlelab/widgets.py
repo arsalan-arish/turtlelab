@@ -128,7 +128,7 @@ class ConfigSpace(ttk.Frame):
         for var in self.variables:
             var.trace_add("write", lambda *_, v=var: self.handleVariable(v))
         for button in self.buttons:
-            button.pack(side="left")
+            button.pack(side="right")
 
 
     def handleVariable(self, var):
@@ -141,7 +141,7 @@ class ConfigSpace(ttk.Frame):
             else:
                 self.event_generate(f"<<{key}disable>>")
         elif isinstance(var, StringVar):
-
+            pass
 
 
     def display(self):
