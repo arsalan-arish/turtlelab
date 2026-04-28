@@ -46,7 +46,7 @@ class TkinterApp(ABC):
         self.root.config(menu=root_menu)
         sub_menus = {}
         for option in options:
-            sub_menus[option] = Menu(root_menu, tearoff=0)
+            sub_menus[option] = Menu(root_menu, tearoff=0, font=("Arial", 10))
             root_menu.add_cascade(label=option, menu=sub_menus[option])
         
         self.bind_to_self(
@@ -54,10 +54,15 @@ class TkinterApp(ABC):
             sub_menus = sub_menus,
         )
 
-    def fill_sub_menu(self, sub_menu: Menu, optionsAndFunctions: dict[str: function]):
-        """ A clean function to fill a sub menu with options """
+    def fill_sub_menu(self, sub_menu: Menu, optionsAndFunctions: dict[tuple[str, str]: function]):
+        """ A clean way to fill a sub menu with options """
         for name, func in optionsAndFunctions.items():
-            sub_menu.add_cascade(label=name, command=func)
+            if name[0] == "--":
+                sub_menu.add_separator()
+            elif name[1] is not None:
+                sub_menu.add_command(label=name[0], command=func, accelerator=name[1])
+            else:
+                sub_menu.add_command(label=name[0], command=func)
 
     def promptForFile(self) -> (str, Path, str):
         """ Prompt the os filedialog, and return (name, path, data) of the file to read"""

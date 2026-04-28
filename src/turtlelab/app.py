@@ -30,6 +30,10 @@ class TurtleLab(TkinterApp):
         root.iconbitmap(iconpath)
         root.geometry("900x600")
         root.state("zoomed")
+        root.tk.call('tk', 'fontchooser', 'show')
+        # root.resizable(False, False)
+        # root.protocol("WM_DELETE_WINDOW", callable)
+        # root.attributes(fullscreen=True, alpha=0.5)
  
         state = {
             "panelVisible": False,
@@ -158,17 +162,18 @@ class TurtleLab(TkinterApp):
         self.fill_sub_menu (
             self.sub_menus["File"],
             {
-                "New File      Ctrl-N": self.newFile,
-                "Open File     Ctrl-O": self.openFile,
-                "Open Folder   Ctrl-K": self.openFolder,
-                "Save          Ctrl-S": self.save,
-                "Open Recent Tab   Ctrl-Shift-T": self.reOpenLastClosedTab,
+                ("New File" , "Ctrl-N"): self.newFile,
+                ("Open File", "Ctrl-O"): self.openFile,
+                ("Open Folder", "Ctrl-K"): self.openFolder,
+                ("Save", "Ctrl-S"): self.save,
+                ("--", None)  : None,
+                ("Open Recent Tab", "Ctrl-Shift-T"): self.reOpenLastClosedTab,
             }
         )
         self.fill_sub_menu (
             self.sub_menus["Run"],
             {
-                "Execute ▶️  Ctrl-Enter": self.execute,
+                ("Execute ▶️", "Ctrl-Enter"): self.execute,
             }
         )
         
