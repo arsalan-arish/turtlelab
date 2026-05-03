@@ -26,7 +26,7 @@ from .widgets import (
 class TurtleLab(TkinterApp):
     def __init__(self, root: Tk):
         root.title("Turtlelab IDE")
-        iconpath = str(Path(__file__).parent) + "/assets/turtle.ico"
+        iconpath = str(Path(__file__).parent) + str(Path("/assets/turtle.ico"))
         root.iconbitmap(iconpath)
         root.geometry("900x600")
         root.state("zoomed")
